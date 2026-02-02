@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Vakantieweer">
+    <meta name="theme-color" content="#FF6B9D">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%23FF6B9D' width='100' height='100'/><text y='75' font-size='70' text-anchor='middle' x='50'>🏖️</text></svg>">
+    <title>Vakantieweer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        :root {
+            --primary-color: #FF6B9D;
+            --secondary-color: #FFA07A;
+            --accent-color: #FFD700;
+            --card-bg: white;
+            --text-dark: #333;
+            --text-light: #666;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            min-height: 100vh;
+            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+            overflow-x: hidden;
+        }
+
+        .app-header {
+            text-align: center;
+            padding: 25px 20px 20px 20px;
+            color: white;
+            position: sticky;
+            top: 0;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            z-index: 100;
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.15);
+        }
+
+        .app-title {
+            font-size: 2.2em;
+            font-weight: 700;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .city-selector {
+            position: relative;
+            max-width: 350px;
+            margin: 15px auto 0 auto;
+        }
+
+        .select-wrapper {
+            position: relative;
+            background: white;
+            border-radius: 30px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .city-select {
+            width: 100%;
+            padding: 15px 45px 15px 20px;
+            font-size: 1.1em;
+            font-weight: 600;
+            border: none;
+            border-radius: 30px;
+            background: transparent;
+            color: var(--primary-color);
+            cursor: pointer;
+            appearance: none;
+            -webkit-appearance: none;
+            font-family: inherit;
+        }
+
+        .select-arrow {
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            pointer-events: none;
+            font-size: 1.2em;
+        }
+
+        .container {
+            padding: 20px;
+            padding-bottom: 80px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .weather-card {
+            background: var(--card-bg);
+            border-radius: 25px;
+            padding: 30px 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            animation: slideIn 0.5s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .current-weather {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 25px;
+            border-bottom: 3px solid #f0f0f0;
+        }
+
+        .current-icon {
+            font-size: 5em;
+            margin: 15px 0;
+            animation: bounce 2s ease-in-out infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .current-temp {
+            font-size: 4em;
+            font-weight: bold;
+            color: var(--primary-color);
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .current-desc {
+            color: var(--text-light);
+            margin-top: 10px;
+            font-size: 1.2em;
+            font-weight: 500;
+        }
+
+        .section-title {
+            font-size: 1.3em;
+            color: var(--primary-color);
+            margin: 25px 0 15px 0;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .hours-scroll {
+            display: flex;
+            gap: 12px;
+            overflow-x: auto;
+            padding: 10px 0;
+            margin-bottom: 25px;
+            -webkit-overflow-scrolling: touch;
+            scroll-snap-type: x mandatory;
+        }
+
+        .hours-scroll::-webkit-scrollbar {
+            display: none;
+        }
+
+        .hour-card {
+            min-width: 90px;
+            background: linear-gradient(135deg, #FFE5EC 0%, #FFF0F5 100%);
+            border-radius: 20px;
+            padding: 18px 12px;
+            text-align: center;
+            scroll-snap-align: start;
+            box-shadow: 0 3px 10px rgba(255, 107, 157, 0.2);
+            border: 2px solid rgba(255, 107, 157, 0.1);
+        }
+
+        .hour-time {
+            font-weight: 700;
+            color: var(--primary-color);
+            font-size: 1em;
+            margin-bottom: 10px;
+        }
+
+        .hour-icon {
+            font-size: 2.5em;
+            margin: 8px 0;
+        }
+
+        .hour-temp {
+            font-size: 1.3em;
+            font-weight: 700;
+            color: var(--text-dark);
+        }
+
+        .day-card {
+            background: linear-gradient(135deg, #FFF9E5 0%, #FFFACD 100%);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 12px;
+            display: grid;
+            grid-template-columns: 100px 70px 1fr 80px;
+            align-items: center;
+            gap: 15px;
+            box-shadow: 0 3px 10px rgba(255, 215, 0, 0.2);
+            border: 2px solid rgba(255, 215, 0, 0.2);
+            transition: transform 0.3s ease;
+        }
+
+        .day-card:active {
+            transform: scale(0.98);
+        }
+
+        .day-name {
+            font-size: 1.1em;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        .day-icon {
+            font-size: 2.5em;
+            text-align: center;
+        }
+
+        .day-description {
+            color: var(--text-light);
+            font-size: 0.95em;
+            font-weight: 500;
+        }
+
+        .day-temp {
+            text-align: right;
+            font-size: 1.2em;
+            font-weight: 700;
+            color: var(--text-dark);
+        }
+
+        .refresh-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: white;
+            color: var(--primary-color);
+            border: none;
+            font-size: 1.8em;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            cursor: pointer;
+            z-index: 1000;
+            transition: transform 0.3s ease;
+        }
+
+        .refresh-btn:active {
+            transform: scale(0.9) rotate(180deg);
+        }
+
+        .refresh-btn.spinning {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .loading {
+            text-align: center;
+            padding: 60px 20px;
+            color: white;
+            font-size: 1.3em;
+        }
+
+        .loading-spinner {
+            font-size: 3em;
+            animation: spin 2s linear infinite;
+            margin-bottom: 15px;
+        }
+
+        .error {
+            text-align: center;
+            padding: 40px 20px;
+            color: #f44336;
+            font-size: 1.1em;
+            background: white;
+            border-radius: 20px;
+            margin: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        @media (max-width: 768px) {
+            .day-card {
+                grid-template-columns: 80px 60px 1fr 70px;
+                padding: 15px;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-header">
+        <div class="app-title">🏖️ Vakantieweer</div>
+        <div class="city-selector">
+            <div class="select-wrapper">
+                <select class="city-select" id="citySelect" onchange="changeCity()">
+                    <option value="0">Bangkok, Thailand</option>
+                    <option value="1">Chiang Mai, Thailand</option>
+                    <option value="2">Chiang Rai, Thailand</option>
+                    <option value="3">Khao Sok, Thailand</option>
+                    <option value="4">Krabi, Thailand</option>
+                    <option value="5">Gaborone, Botswana</option>
+                    <option value="6">Leiden, Nederland</option>
+                    <option value="7">Wageningen, Nederland</option>
+                </select>
+                <span class="select-arrow">▼</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="container" id="weatherContainer">
+        <div class="loading">
+            <div class="loading-spinner">⏳</div>
+            <div>Weergegevens worden opgehaald...</div>
+        </div>
+    </div>
+
+    <button class="refresh-btn" id="refreshBtn" onclick="loadWeather()">🔄</button>
+
+    <script>
+        const cities = [
+            { name: 'Bangkok', country: 'Thailand', lat: 13.7563, lon: 100.5018, timezone: 'Asia/Bangkok' },
+            { name: 'Chiang Mai', country: 'Thailand', lat: 18.7883, lon: 98.9853, timezone: 'Asia/Bangkok' },
+            { name: 'Chiang Rai', country: 'Thailand', lat: 19.9105, lon: 99.8406, timezone: 'Asia/Bangkok' },
+            { name: 'Khao Sok', country: 'Thailand', lat: 8.9156, lon: 98.5312, timezone: 'Asia/Bangkok' },
+            { name: 'Krabi', country: 'Thailand', lat: 8.0863, lon: 98.9063, timezone: 'Asia/Bangkok' },
+            { name: 'Gaborone', country: 'Botswana', lat: -24.6282, lon: 25.9231, timezone: 'Africa/Gaborone' },
+            { name: 'Leiden', country: 'Nederland', lat: 52.1601, lon: 4.4970, timezone: 'Europe/Amsterdam' },
+            { name: 'Wageningen', country: 'Nederland', lat: 51.9692, lon: 5.6654, timezone: 'Europe/Amsterdam' }
+        ];
+
+        let currentCityIndex = 0;
+
+        const weatherIcons = {
+            0: '☀️', 1: '🌤️', 2: '⛅', 3: '☁️',
+            45: '🌫️', 48: '🌫️',
+            51: '🌦️', 53: '🌧️', 55: '🌧️',
+            61: '🌧️', 63: '🌧️', 65: '⛈️',
+            71: '🌨️', 73: '❄️', 75: '❄️', 77: '🌨️',
+            80: '🌦️', 81: '🌧️', 82: '⛈️',
+            85: '🌨️', 86: '❄️',
+            95: '⛈️', 96: '⛈️', 99: '⛈️'
+        };
+
+        const weatherDescriptions = {
+            0: 'Helder', 1: 'Overwegend helder', 2: 'Gedeeltelijk bewolkt', 3: 'Bewolkt',
+            45: 'Mist', 48: 'Mist',
+            51: 'Lichte motregen', 53: 'Matige motregen', 55: 'Dichte motregen',
+            61: 'Lichte regen', 63: 'Matige regen', 65: 'Zware regen',
+            71: 'Lichte sneeuw', 73: 'Matige sneeuw', 75: 'Zware sneeuw', 77: 'Sneeuwvlokken',
+            80: 'Lichte regenbuien', 81: 'Matige regenbuien', 82: 'Zware regenbuien',
+            85: 'Lichte sneeuwbuien', 86: 'Zware sneeuwbuien',
+            95: 'Onweer', 96: 'Onweer met hagel', 99: 'Hevig onweer'
+        };
+
+        const dayNames = ['Zondag', 'Maandag', 'Dinsdag', 'Woensdag', 'Donderdag', 'Vrijdag', 'Zaterdag'];
+
+        function getDayName(dateString) {
+            const date = new Date(dateString);
+            const today = new Date();
+            const tomorrow = new Date(today);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+
+            if (date.toDateString() === today.toDateString()) return 'Vandaag';
+            if (date.toDateString() === tomorrow.toDateString()) return 'Morgen';
+            return dayNames[date.getDay()];
+        }
+
+        function getWeatherIcon(code) {
+            return weatherIcons[code] || '🌤️';
+        }
+
+        function getWeatherDescription(code) {
+            return weatherDescriptions[code] || 'Onbekend';
+        }
+
+        async function fetchWeather(city) {
+            const url = `https://api.open-meteo.com/v1/forecast?latitude=${city.lat}&longitude=${city.lon}&daily=weathercode,temperature_2m_max,temperature_2m_min&hourly=temperature_2m,weathercode&current_weather=true&timezone=${city.timezone}&forecast_days=4`;
+
+            console.log(`Fetching weather for ${city.name}...`);
+
+            try {
+                const response = await fetch(url);
+                console.log(`Response status: ${response.status}`);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                console.log('Data received:', data);
+                return data;
+            } catch (error) {
+                console.error(`Error fetching weather:`, error);
+                throw error;
+            }
+        }
+
+        function createWeatherCard(city, weatherData) {
+            const currentWeather = weatherData.current_weather;
+            const daily = weatherData.daily;
+            const hourly = weatherData.hourly;
+
+            // Uurlijkse voorspelling
+            let hoursHTML = '';
+            const currentHour = new Date().getHours();
+            const currentDate = new Date().toISOString().split('T')[0];
+
+            let startIndex = 0;
+            for (let i = 0; i < hourly.time.length; i++) {
+                const hourDate = new Date(hourly.time[i]);
+                if (hourDate.getHours() === currentHour && hourly.time[i].startsWith(currentDate)) {
+                    startIndex = i;
+                    break;
+                }
+            }
+
+            for (let i = 0; i < 8 && (startIndex + i) < hourly.time.length; i++) {
+                const index = startIndex + i;
+                const hourTime = new Date(hourly.time[index]);
+                const hour = hourTime.getHours();
+                const timeStr = `${hour.toString().padStart(2, '0')}:00`;
+                const icon = getWeatherIcon(hourly.weathercode[index]);
+                const temp = Math.round(hourly.temperature_2m[index]);
+
+                hoursHTML += `
+                    <div class="hour-card">
+                        <div class="hour-time">${timeStr}</div>
+                        <div class="hour-icon">${icon}</div>
+                        <div class="hour-temp">${temp}°</div>
+                    </div>
+                `;
+            }
+
+            // Dagelijkse voorspelling
+            let daysHTML = '';
+            for (let i = 1; i <= 3; i++) {
+                const dayName = getDayName(daily.time[i]);
+                const icon = getWeatherIcon(daily.weathercode[i]);
+                const description = getWeatherDescription(daily.weathercode[i]);
+                const maxTemp = Math.round(daily.temperature_2m_max[i]);
+                const minTemp = Math.round(daily.temperature_2m_min[i]);
+
+                daysHTML += `
+                    <div class="day-card">
+                        <div class="day-name">${dayName}</div>
+                        <div class="day-icon">${icon}</div>
+                        <div class="day-description">${description}</div>
+                        <div class="day-temp">${maxTemp}° / ${minTemp}°</div>
+                    </div>
+                `;
+            }
+
+            return `
+                <div class="weather-card">
+                    <div class="current-weather">
+                        <div class="current-icon">${getWeatherIcon(currentWeather.weathercode)}</div>
+                        <div class="current-temp">${Math.round(currentWeather.temperature)}°C</div>
+                        <div class="current-desc">Nu: ${getWeatherDescription(currentWeather.weathercode)}</div>
+                    </div>
+
+                    <div class="section-title">⏰ Komende 8 uur</div>
+                    <div class="hours-scroll">
+                        ${hoursHTML}
+                    </div>
+
+                    <div class="section-title">📅 Komende 3 dagen</div>
+                    ${daysHTML}
+                </div>
+            `;
+        }
+
+        async function loadWeather() {
+            const container = document.getElementById('weatherContainer');
+            const refreshBtn = document.getElementById('refreshBtn');
+            const city = cities[currentCityIndex];
+
+            console.log('Loading weather for:', city.name);
+            refreshBtn.classList.add('spinning');
+            container.innerHTML = '<div class="loading"><div class="loading-spinner">⏳</div><div>Weergegevens worden opgehaald...</div></div>';
+
+            try {
+                const weatherData = await fetchWeather(city);
+                container.innerHTML = createWeatherCard(city, weatherData);
+                console.log('Weather loaded successfully');
+            } catch (error) {
+                console.error('Error loading weather:', error);
+                container.innerHTML = `
+                    <div class="error">
+                        ⚠️ Kon weergegevens niet ophalen voor ${city.name}.<br>
+                        <small>Error: ${error.message}</small><br>
+                        Probeer het later opnieuw.
+                    </div>
+                `;
+            } finally {
+                refreshBtn.classList.remove('spinning');
+            }
+        }
+
+        function changeCity() {
+            currentCityIndex = parseInt(document.getElementById('citySelect').value);
+            loadWeather();
+        }
+
+        // Laad weer bij openen
+        loadWeather();
+
+        // Auto-refresh elke 10 minuten
+        setInterval(loadWeather, 600000);
+    </script>
+</body>
+</html>
