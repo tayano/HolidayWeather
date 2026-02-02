@@ -7,7 +7,8 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Vakantieweer">
     <meta name="theme-color" content="#667eea">
-    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%23667eea' width='100' height='100'/><text y='75' font-size='70' text-anchor='middle' x='50'>🏖️</text></svg>">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%23667eea' width='192' height='192'/><text y='150' font-size='120' text-anchor='middle' x='96'>🏖️</text></svg>">
+    <link rel="manifest" href="manifest-vakantieweer.json">
     <title>Vakantieweer</title>
     <style>
         * {
@@ -296,6 +297,84 @@
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
         }
 
+        .info-btn {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: white;
+            color: var(--primary-color);
+            border: none;
+            font-size: 1.8em;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            cursor: pointer;
+            z-index: 1000;
+            transition: transform 0.3s ease;
+        }
+
+        .info-btn:active {
+            transform: scale(0.9);
+        }
+
+        .install-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 2000;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .install-modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .install-content {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 500px;
+            width: 100%;
+            position: relative;
+        }
+
+        .install-close {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            font-size: 2em;
+            cursor: pointer;
+            color: #999;
+        }
+
+        .install-content h3 {
+            color: var(--primary-color);
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+
+        .install-content p {
+            color: var(--text-dark);
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        .install-content ol {
+            color: var(--text-dark);
+            line-height: 1.8;
+            margin-left: 20px;
+        }
+
         @media (max-width: 768px) {
             .day-card {
                 grid-template-columns: 80px 60px 1fr 70px;
@@ -333,6 +412,21 @@
     </div>
 
     <button class="refresh-btn" id="refreshBtn" onclick="loadWeather()">🔄</button>
+    <button class="info-btn" onclick="showInstallInstructions()">ℹ️</button>
+
+    <div class="install-modal" id="installModal">
+        <div class="install-content">
+            <button class="install-close" onclick="hideInstallInstructions()">×</button>
+            <h3>📱 Installeer Vakantieweer</h3>
+            <p>Voeg deze app toe aan je home screen voor snelle toegang!</p>
+            <ol>
+                <li>Tik op het deel-icoon <strong>⎘</strong> onderaan je scherm (Safari)</li>
+                <li>Scroll naar beneden en kies <strong>"Zet op beginscherm"</strong></li>
+                <li>Tik op <strong>"Voeg toe"</strong></li>
+                <li>De app verschijnt nu op je beginscherm! 🏖️</li>
+            </ol>
+        </div>
+    </div>
 
     <script>
         const cities = [
@@ -517,6 +611,21 @@
         function changeCity() {
             currentCityIndex = parseInt(document.getElementById('citySelect').value);
             loadWeather();
+        }
+
+        function showInstallInstructions() {
+            document.getElementById('installModal').classList.add('show');
+        }
+
+        function hideInstallInstructions() {
+            document.getElementById('installModal').classList.remove('show');
+        }
+
+        // Registreer service worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw-vakantieweer.js')
+                .then(reg => console.log('Service Worker geregistreerd:', reg))
+                .catch(err => console.log('Service Worker registratie mislukt:', err));
         }
 
         // Laad weer bij openen
