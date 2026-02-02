@@ -9,6 +9,8 @@
     <meta name="theme-color" content="#667eea">
     <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%23667eea' width='192' height='192'/><text y='150' font-size='120' text-anchor='middle' x='96'>🏖️</text></svg>">
     <link rel="manifest" href="manifest-vakantieweer.json">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <title>Vakantieweer</title>
     <style>
         * {
@@ -375,6 +377,71 @@
             margin-left: 20px;
         }
 
+        #map {
+            height: 400px;
+            width: 100%;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            margin-top: 25px;
+        }
+
+        .weather-marker {
+            background: white;
+            border-radius: 15px;
+            padding: 10px 15px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            border: 3px solid var(--primary-color);
+            font-weight: 600;
+            min-width: 80px;
+        }
+
+        .weather-marker-icon {
+            font-size: 2em;
+            margin-bottom: 5px;
+        }
+
+        .weather-marker-temp {
+            font-size: 1.2em;
+            color: var(--primary-color);
+        }
+
+        .weather-marker-name {
+            font-size: 0.85em;
+            color: var(--text-light);
+            margin-top: 3px;
+        }
+
+        .leaflet-popup-content-wrapper {
+            border-radius: 15px;
+            overflow: hidden;
+        }
+
+        .leaflet-popup-content {
+            margin: 15px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+        }
+
+        .popup-city-name {
+            font-size: 1.3em;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+
+        .popup-temp {
+            font-size: 2em;
+            font-weight: bold;
+            color: var(--text-dark);
+            margin: 10px 0;
+        }
+
+        .popup-desc {
+            color: var(--text-light);
+            font-size: 1em;
+        }
+
         @media (max-width: 768px) {
             .day-card {
                 grid-template-columns: 80px 60px 1fr 70px;
@@ -441,6 +508,8 @@
         ];
 
         let currentCityIndex = 0;
+        let map = null;
+        let currentMarker = null;
 
         const weatherIcons = {
             0: '☀️', 1: '🌤️', 2: '⛅', 3: '☁️',
@@ -577,6 +646,9 @@
 
                     <div class="section-title">📅 Komende 3 dagen</div>
                     ${daysHTML}
+
+                    <div class="section-title">🗺️ Locatie</div>
+                    <div id="map"></div>
                 </div>
             `;
         }
@@ -594,6 +666,9 @@
                 const weatherData = await fetchWeather(city);
                 container.innerHTML = createWeatherCard(city, weatherData);
                 console.log('Weather loaded successfully');
+
+                // Initialize or update map after card is rendered
+                setTimeout(() => initOrUpdateMap(city, weatherData), 100);
             } catch (error) {
                 console.error('Error loading weather:', error);
                 container.innerHTML = `
@@ -606,6 +681,62 @@
             } finally {
                 refreshBtn.classList.remove('spinning');
             }
+        }
+
+        function initOrUpdateMap(city, weatherData) {
+            // Remove existing map if it exists
+            if (map) {
+                map.remove();
+                map = null;
+                currentMarker = null;
+            }
+
+            // Initialize new map
+            map = L.map('map').setView([city.lat, city.lon], 10);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors',
+                maxZoom: 18
+            }).addTo(map);
+
+            // Add marker for current city
+            const currentWeather = weatherData.current_weather;
+            const icon = getWeatherIcon(currentWeather.weathercode);
+            const temp = Math.round(currentWeather.temperature);
+            const description = getWeatherDescription(currentWeather.weathercode);
+
+            const markerHtml = `
+                <div class="weather-marker">
+                    <div class="weather-marker-icon">${icon}</div>
+                    <div class="weather-marker-temp">${temp}°</div>
+                    <div class="weather-marker-name">${city.name}</div>
+                </div>
+            `;
+
+            const customIcon = L.divIcon({
+                className: 'custom-marker',
+                html: markerHtml,
+                iconSize: [80, 90],
+                iconAnchor: [40, 90]
+            });
+
+            currentMarker = L.marker([city.lat, city.lon], { icon: customIcon })
+                .addTo(map);
+
+            const popupContent = `
+                <div class="popup-city-name">${city.name}, ${city.country}</div>
+                <div class="popup-temp">${temp}°C ${icon}</div>
+                <div class="popup-desc">${description}</div>
+            `;
+            currentMarker.bindPopup(popupContent);
+
+            // Remove marker after 5 seconds
+            setTimeout(() => {
+                if (currentMarker && map) {
+                    map.removeLayer(currentMarker);
+                    currentMarker = null;
+                }
+            }, 5000);
         }
 
         function changeCity() {
